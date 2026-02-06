@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { auth } from "../_lib/auth"; // v5 auth function
 
 export default async function Navigation() {
@@ -29,12 +30,15 @@ export default async function Navigation() {
               href="/account"
               className="hover:text-accent-400 transition-colors flex items-center gap-4"
             >
-              <img
-                className="h-8 rounded-full"
-                src={session.user.image}
-                alt={session.user.name}
-                referrerPolicy="no-referrer"
-              />
+              <div className="relative h-8 w-8 rounded-full overflow-hidden">
+                <Image
+                  src={session.user.image}
+                  alt={session.user.name || "Guest"}
+                  fill
+                  className="object-cover"
+                  referrerPolicy="no-referrer"
+                />
+              </div>
               <span>Guest area</span>
             </Link>
           ) : (
