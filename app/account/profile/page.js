@@ -1,14 +1,21 @@
 import SelectCountry from "@/app/_components/SelectCountry";
 import UpdateProfileForm from "@/app/_components/UpdateProfileForm";
-import { auth } from "@/app/_lib/auth";
 import { getGuest } from "@/app/_lib/data-service";
+
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 export const metadata = {
   title: "Update profile",
 };
 
 export default async function Page() {
-  const session = await auth();
+  const session = await getServerSession(authOptions);
+
+  if (!session) {
+    return <p>Please login first.</p>;
+  }
+
   const guest = await getGuest(session.user.email);
 
   return (
@@ -27,7 +34,7 @@ export default async function Page() {
           name="nationality"
           id="nationality"
           className="px-5 py-3 bg-primary-200 text-primary-800 w-full shadow-sm rounded-sm"
-          defaultCountry={guest.nationality}
+          defaultCountry={guest?.nationality}
         />
       </UpdateProfileForm>
     </div>

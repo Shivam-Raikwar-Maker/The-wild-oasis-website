@@ -1,9 +1,10 @@
 import Link from "next/link";
 import Image from "next/image";
-import { auth } from "../_lib/auth"; // v5 auth function
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 export default async function Navigation() {
-  const session = await auth(); // works in server components in v5
+  const session = await getServerSession(authOptions);
 
   return (
     <nav className="z-10 text-xl">

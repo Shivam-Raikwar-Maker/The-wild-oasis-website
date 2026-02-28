@@ -1,14 +1,20 @@
-// import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
-// export function middleware(request) {
-//   console.log();
+export async function middleware(req) {
+  // Check if NextAuth session cookie exists
+  const token =
+    req.cookies.get("next-auth.session-token") ||
+    req.cookies.get("__Secure-next-auth.session-token");
 
-//   return NextResponse.redirect(new URL("/about", request.url));
-// }
+  if (!token) {
+    const url = req.nextUrl.clone();
+    url.pathname = "/login";
+    return NextResponse.redirect(url);
+  }
 
-import { auth } from "@/app/_lib/auth";
-export const middleware = auth;
+  return NextResponse.next();
+}
 
 export const config = {
-  matcher: ["/account"],
+  matcher: ["/account/:path*"], // Protects /account and its subroutes
 };
