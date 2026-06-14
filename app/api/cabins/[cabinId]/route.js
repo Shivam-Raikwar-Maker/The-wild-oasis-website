@@ -1,18 +1,29 @@
-import { getBookedDatesByCabinId, getCabin } from "@/app/_lib/data-service";
+import { getCabin, getBookedDatesByCabinId } from "@/app/_lib/data-service";
 
 export async function GET(request, { params }) {
-  const { cabinId } = params;
-
   try {
+    const cabinId = params?.cabinId;
+
+    if (!cabinId) {
+      return Response.json({ message: "Missing cabinId" }, { status: 400 });
+    }
+
     const [cabin, bookedDates] = await Promise.all([
       getCabin(cabinId),
       getBookedDatesByCabinId(cabinId),
     ]);
 
+    if (!cabin) {
+      return Response.json({ message: "Not found" }, { status: 404 });
+    }
+
     return Response.json({ cabin, bookedDates });
-  } catch {
-    return Response.json({ message: "Cabin not found" });
+  } catch (err) {
+    console.error("API ERROR:", err);
+
+    return Response.json(
+      { message: "Server error", error: String(err) },
+      { status: 500 },
+    );
   }
 }
-
-// export async function POST() {}

@@ -40,15 +40,12 @@ export const getCabins = async function () {
     .select("id, name, maxCapacity, regularPrice, discount, image")
     .order("name");
 
-  // For testing
-  // await new Promise((res) => setTimeout(res, 2000));
-
   if (error) {
-    console.error(error);
-    throw new Error("Cabins could not be loaded");
+    console.error("getCabins error:", error);
+    return [];
   }
 
-  return data;
+  return data || [];
 };
 
 // Guests are uniquely identified by their email address
