@@ -13,19 +13,26 @@ async function getSession() {
   return session;
 }
 
-// ✅ UPDATE GUEST
+// ✅ UPDATE GUEST (FIXED)
 export async function updateGuest(formData) {
   const session = await getSession();
 
-  const nationalID = formData.get("nationalID");
-  const [nationality, countryFlag] = formData.get("nationality").split("%");
+  const nationalID = formData.get("nationalID") || "";
+  const nationalityRaw = formData.get("nationality") || "";
+  const [nationality, countryFlag] = nationalityRaw.split("%") || ["", ""];
 
-  if (!/^[a-zA-Z0-9]{6,12}$/.test(nationalID))
+  // ✅ FIX: Make nationalID optional but validate if provided
+  if (nationalID && !/^[a-zA-Z0-9]{6,12}$/.test(nationalID)) {
     throw new Error("Please provide a valid national ID");
+  }
 
   const { error } = await supabase
     .from("guests")
-    .update({ nationality, countryFlag, nationalID })
+    .update({
+      nationality,
+      countryFlag,
+      nationalID: nationalID || null, // ✅ avoid undefined
+    })
     .eq("id", session.user.guestId);
 
   if (error) throw new Error("Guest could not be updated");
@@ -33,15 +40,15 @@ export async function updateGuest(formData) {
   revalidatePath("/account/profile");
 }
 
-// ✅ CREATE BOOKING
+// ✅ CREATE BOOKING (SAFE)
 export async function createBooking(bookingData, formData) {
   const session = await getSession();
 
   const newBooking = {
     ...bookingData,
     guestId: session.user.guestId,
-    numGuests: Number(formData.get("numGuests")),
-    observations: formData.get("observations").slice(0, 1000),
+    numGuests: Number(formData.get("numGuests") || 0),
+    observations: (formData.get("observations") || "").slice(0, 1000),
     extraPrice: 0,
     totalPrice: bookingData.cabinPrice,
     isPaid: false,
@@ -89,8 +96,8 @@ export async function updateBooking(formData) {
   const { error } = await supabase
     .from("bookings")
     .update({
-      numGuests: Number(formData.get("numGuests")),
-      observations: formData.get("observations").slice(0, 1000),
+      numGuests: Number(formData.get("numGuests") || 0),
+      observations: (formData.get("observations") || "").slice(0, 1000),
     })
     .eq("id", bookingId);
 

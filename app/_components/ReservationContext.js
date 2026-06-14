@@ -4,10 +4,12 @@ import { createContext, useContext, useState } from "react";
 
 const ReservationContext = createContext();
 
-const initialState = { from: undefined, to: undefined };
+// ✅ Better initial state
+const initialState = { from: null, to: null };
 
 function ReservationProvider({ children }) {
   const [range, setRange] = useState(initialState);
+
   const resetRange = () => setRange(initialState);
 
   return (
@@ -19,8 +21,11 @@ function ReservationProvider({ children }) {
 
 function useReservation() {
   const context = useContext(ReservationContext);
-  if (context === undefined)
-    throw new Error("Context was used outside provider");
+
+  if (!context) {
+    throw new Error("useReservation must be used within ReservationProvider");
+  }
+
   return context;
 }
 

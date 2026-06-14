@@ -11,33 +11,44 @@ import "react-day-picker/dist/style.css";
 import { useReservation } from "./ReservationContext";
 
 function isAlreadyBooked(range, datesArr) {
-  return (
-    range.from &&
-    range.to &&
-    datesArr.some((date) =>
-      isWithinInterval(date, { start: range.from, end: range.to }),
-    )
+  if (!range?.from || !range?.to) return false;
+
+  return datesArr.some((date) =>
+    isWithinInterval(date, { start: range.from, end: range.to }),
   );
 }
 
 function DateSelector({ settings, cabin, bookedDates }) {
   const { range, setRange, resetRange } = useReservation();
 
-  const displayRange = isAlreadyBooked(range, bookedDates) ? {} : range;
-
   const { regularPrice, discount } = cabin;
-  const numNights = differenceInDays(displayRange.to, displayRange.from);
+
+  const numNights =
+    range?.from && range?.to ? differenceInDays(range.to, range.from) : 0;
+
   const cabinPrice = numNights * (regularPrice - discount);
 
   const { minBookingLength, maxBookingLength } = settings;
+
+  const isBooked = isAlreadyBooked(range, bookedDates);
 
   return (
     <div className="flex flex-col justify-between">
       <DayPicker
         className="pt-12 place-self-center"
         mode="range"
-        onSelect={setRange}
-        selected={displayRange}
+        selected={range}
+        onSelect={(selectedRange) => {
+          if (!selectedRange) {
+            setRange({ from: null, to: null });
+            return;
+          }
+
+          setRange({
+            from: selectedRange.from || null,
+            to: selectedRange.to || null,
+          });
+        }}
         min={minBookingLength + 1}
         max={maxBookingLength}
         fromMonth={new Date()}
@@ -64,9 +75,10 @@ function DateSelector({ settings, cabin, bookedDates }) {
             ) : (
               <span className="text-2xl">${regularPrice}</span>
             )}
-            <span className="">/night</span>
+            <span>/night</span>
           </p>
-          {numNights ? (
+
+          {numNights > 0 && (
             <>
               <p className="bg-accent-600 px-3 py-2 text-2xl">
                 <span>&times;</span> <span>{numNights}</span>
@@ -76,18 +88,24 @@ function DateSelector({ settings, cabin, bookedDates }) {
                 <span className="text-2xl font-semibold">${cabinPrice}</span>
               </p>
             </>
-          ) : null}
+          )}
         </div>
 
-        {range.from || range.to ? (
+        {(range?.from || range?.to) && (
           <button
             className="border border-primary-800 py-2 px-4 text-sm font-semibold"
             onClick={resetRange}
           >
             Clear
           </button>
-        ) : null}
+        )}
       </div>
+
+      {isBooked && (
+        <p className="text-red-500 text-center mt-2">
+          These dates are already booked ❌
+        </p>
+      )}
     </div>
   );
 }

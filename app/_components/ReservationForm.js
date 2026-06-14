@@ -10,9 +10,11 @@ function ReservationForm({ cabin, user }) {
   const { range, resetRange } = useReservation();
   const { maxCapacity, regularPrice, discount, id } = cabin;
 
-  const startDate = range.from;
-  const endDate = range.to;
+  // ✅ SAFE ACCESS
+  const startDate = range?.from || null;
+  const endDate = range?.to || null;
 
+  // ✅ SAFE CALCULATION
   const numNights =
     startDate && endDate ? differenceInDays(endDate, startDate) : 0;
 
@@ -48,7 +50,7 @@ function ReservationForm({ cabin, user }) {
         </div>
       </div>
 
-      {/* ✅ SELECTED DATES DISPLAY (FIX) */}
+      {/* ✅ SELECTED DATES DISPLAY */}
       {startDate && endDate ? (
         <div className="bg-primary-700 text-primary-200 px-6 py-3 rounded-md text-sm">
           <span className="font-semibold">Selected dates:</span>{" "}
@@ -64,6 +66,9 @@ function ReservationForm({ cabin, user }) {
       {/* Reservation form */}
       <form
         action={async (formData) => {
+          // ✅ Prevent submit if no dates
+          if (!startDate || !endDate) return;
+
           await createBookingWithData(formData);
           resetRange();
         }}
@@ -76,7 +81,7 @@ function ReservationForm({ cabin, user }) {
             id="numGuests"
             className="px-5 py-3 bg-primary-200 text-primary-800 w-full shadow-sm rounded-sm"
             required
-            disabled={!startDate || !endDate}
+            disabled={!startDate || !endDate} // ✅ disable until dates selected
           >
             <option value="">Select number of guests...</option>
             {Array.from({ length: maxCapacity }, (_, i) => i + 1).map((x) => (
