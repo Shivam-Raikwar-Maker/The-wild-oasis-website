@@ -4,18 +4,27 @@ import { ReservationProvider } from "@/app/_components/ReservationContext";
 import { Suspense } from "react";
 import Spinner from "@/app/_components/Spinner";
 import Cabin from "@/app/_components/Cabin";
+import { notFound } from "next/navigation";
 
-// Metadata
+// Metadata (safe)
 export async function generateMetadata({ params }) {
-  const { name } = await getCabin(params.cabinId);
+  const cabin = await getCabin(params.cabinId);
+
+  if (!cabin) {
+    return {
+      title: "Cabin not found",
+    };
+  }
+
   return {
-    title: `Cabin ${name}`,
+    title: `Cabin ${cabin.name}`,
   };
 }
 
 // Static params
 export async function generateStaticParams() {
   const cabins = await getCabins();
+
   return cabins.map((cabin) => ({
     cabinId: String(cabin.id),
   }));
@@ -24,6 +33,10 @@ export async function generateStaticParams() {
 // Page
 export default async function Page({ params }) {
   const cabin = await getCabin(params.cabinId);
+
+  if (!cabin) {
+    notFound();
+  }
 
   return (
     <div className="max-w-6xl mx-auto mt-8">

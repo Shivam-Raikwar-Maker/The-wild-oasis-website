@@ -1,4 +1,3 @@
-import { notFound } from "next/navigation";
 import { eachDayOfInterval } from "date-fns";
 import { supabase } from "./supabase";
 
@@ -10,14 +9,11 @@ export async function getCabin(id) {
     .from("cabins")
     .select("*")
     .eq("id", id)
-    .single();
-
-  // For testing
-  // await new Promise((res) => setTimeout(res, 2000));
+    .maybeSingle();
 
   if (error) {
     console.error(error);
-    notFound();
+    return null;
   }
 
   return data;
@@ -28,10 +24,11 @@ export async function getCabinPrice(id) {
     .from("cabins")
     .select("regularPrice, discount")
     .eq("id", id)
-    .single();
+    .maybeSingle();
 
   if (error) {
     console.error(error);
+    return null;
   }
 
   return data;
@@ -60,22 +57,26 @@ export async function getGuest(email) {
     .from("guests")
     .select("*")
     .eq("email", email)
-    .single();
+    .maybeSingle();
 
-  // No error here! We handle the possibility of no guest in the sign in callback
+  if (error) {
+    console.error(error);
+    return null;
+  }
+
   return data;
 }
 
 export async function getBooking(id) {
-  const { data, error, count } = await supabase
+  const { data, error } = await supabase
     .from("bookings")
     .select("*")
     .eq("id", id)
-    .single();
+    .maybeSingle();
 
   if (error) {
     console.error(error);
-    throw new Error("Booking could not get loaded");
+    return null;
   }
 
   return data;
@@ -100,43 +101,45 @@ export async function getBookings(guestId) {
 }
 
 export async function getBookedDatesByCabinId(cabinId) {
-  let today = new Date();
-  today.setUTCHours(0, 0, 0, 0);
-  today = today.toISOString();
+  try {
+    let today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+    today = today.toISOString();
 
-  // Getting all bookings
-  const { data, error } = await supabase
-    .from("bookings")
-    .select("*")
-    .eq("cabinId", cabinId)
-    .or(`startDate.gte.${today},status.eq.checked-in`);
+    const { data, error } = await supabase
+      .from("bookings")
+      .select("*")
+      .eq("cabinId", cabinId)
+      .or(`startDate.gte.${today},status.eq.checked-in`);
 
-  if (error) {
-    console.error(error);
-    throw new Error("Bookings could not get loaded");
+    if (error || !data) {
+      console.error(error);
+      return [];
+    }
+
+    return data
+      .map((booking) =>
+        eachDayOfInterval({
+          start: new Date(booking.startDate),
+          end: new Date(booking.endDate),
+        }),
+      )
+      .flat();
+  } catch (err) {
+    console.error(err);
+    return [];
   }
-
-  // Converting to actual dates to be displayed in the date picker
-  const bookedDates = data
-    .map((booking) => {
-      return eachDayOfInterval({
-        start: new Date(booking.startDate),
-        end: new Date(booking.endDate),
-      });
-    })
-    .flat();
-
-  return bookedDates;
 }
 
 export async function getSettings() {
-  const { data, error } = await supabase.from("settings").select("*").single();
-
-  // await new Promise((res) => setTimeout(res, 5000));
+  const { data, error } = await supabase
+    .from("settings")
+    .select("*")
+    .maybeSingle();
 
   if (error) {
     console.error(error);
-    throw new Error("Settings could not be loaded");
+    return null;
   }
 
   return data;
@@ -145,12 +148,22 @@ export async function getSettings() {
 export async function getCountries() {
   try {
     const res = await fetch(
-      "https://restcountries.com/v2/all?fields=name,flag",
+      "https://countriesnow.space/api/v0.1/countries/flag/images",
     );
-    const countries = await res.json();
-    return countries;
-  } catch {
-    throw new Error("Could not fetch countries");
+
+    if (!res.ok) throw new Error("Failed to fetch countries");
+
+    const json = await res.json();
+
+    return json.data
+      .map((c) => ({
+        name: c.name,
+        flag: c.flag,
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  } catch (err) {
+    console.error("Countries API error:", err);
+    return [];
   }
 }
 
@@ -158,11 +171,15 @@ export async function getCountries() {
 // CREATE
 
 export async function createGuest(newGuest) {
-  const { data, error } = await supabase.from("guests").insert([newGuest]);
+  const { data, error } = await supabase
+    .from("guests")
+    .insert([newGuest])
+    .select()
+    .maybeSingle();
 
   if (error) {
     console.error(error);
-    throw new Error("Guest could not be created");
+    return null;
   }
 
   return data;
