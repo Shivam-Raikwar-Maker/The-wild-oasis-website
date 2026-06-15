@@ -1,5 +1,5 @@
 import { eachDayOfInterval } from "date-fns";
-import { supabase } from "./supabase";
+import { supabase } from "@/app/_lib/supabase";
 
 /////////////
 // GET
@@ -34,6 +34,8 @@ export async function getCabinPrice(id) {
   return data;
 }
 
+import { supabase } from "./supabase";
+
 export const getCabins = async function () {
   const { data, error } = await supabase
     .from("cabins")
@@ -42,7 +44,7 @@ export const getCabins = async function () {
 
   if (error) {
     console.error("getCabins error:", error);
-    return [];
+    throw new Error("Cabins could not be loaded");
   }
 
   return data || [];
@@ -99,22 +101,17 @@ export async function getBookings(guestId) {
 
 export async function getBookedDatesByCabinId(cabinId) {
   try {
-    let today = new Date();
-    today.setUTCHours(0, 0, 0, 0);
-    today = today.toISOString();
+    const today = new Date().toISOString();
 
     const { data, error } = await supabase
       .from("bookings")
-      .select("*")
-      .eq("cabinId", cabinId)
-      .or(`startDate.gte.${today},status.eq.checked-in`);
+      .select("startDate, endDate")
+      .eq("cabinId", cabinId);
 
-    if (error || !data) {
-      console.error(error);
-      return [];
-    }
+    if (error || !data) return [];
 
     return data
+      .filter((b) => b.startDate && b.endDate)
       .map((booking) =>
         eachDayOfInterval({
           start: new Date(booking.startDate),

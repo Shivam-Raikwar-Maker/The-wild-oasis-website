@@ -3,7 +3,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { getBookings } from "./data-service";
-import { supabase } from "./supabase";
+import { supabase } from "@/app/_lib/supabase";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
