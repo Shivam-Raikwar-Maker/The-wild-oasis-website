@@ -34,8 +34,6 @@ export async function getCabinPrice(id) {
   return data;
 }
 
-import { supabase } from "./supabase";
-
 export const getCabins = async function () {
   const { data, error } = await supabase
     .from("cabins")
